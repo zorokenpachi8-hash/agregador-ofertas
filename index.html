@@ -3,99 +3,284 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radar de Ofertas | Promos Flash</title>
-  <!-- Tailwind CSS CDN -->
+  <title>FlashOfertas - Agregador de Promoções</title>
+  
+  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Ícones Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- Header -->
-  <header class="bg-red-600 text-white py-4 shadow-md sticky top-0 z-50">
-    <div class="container mx-auto px-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
-        🔥 Radar de Ofertas
-      </h1>
-      <span class="text-xs bg-red-800 px-2.5 py-1 rounded-full font-semibold">
-        Atualizado 24h
-      </span>
+  <!-- HEADER PRINCIPAL -->
+  <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-40 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('user')">
+          <div class="bg-gradient-to-tr from-amber-500 to-red-500 text-white p-2 rounded-xl shadow-lg shadow-amber-500/20">
+            <i data-lucide="zap" class="h-6 w-6 fill-current"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+              FlashOfertas
+            </span>
+            <span class="text-[10px] block text-slate-400 font-medium uppercase tracking-widest">
+              Robô de Promoções Automático
+            </span>
+          </div>
+        </div>
+
+        <!-- Alternador de Abas -->
+        <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button id="btn-tab-user" onclick="switchTab('user')" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+            <span>Portal Público</span>
+          </button>
+          <button id="btn-tab-admin" onclick="switchTab('admin')" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+            <span>Painel do Bot/Scraper</span>
+          </button>
+        </div>
+
+      </div>
     </div>
   </header>
 
-  <!-- Container Principal -->
-  <main class="container mx-auto px-4 py-6 flex-grow">
+  <!-- PORTAL DO USUÁRIO -->
+  <main id="tab-user" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
-    <div class="mb-6 text-center">
-      <h2 class="text-2xl font-bold text-gray-900">Ofertas Imperdíveis do Dia</h2>
-      <p class="text-sm text-gray-600 mt-1">As melhores promoções da Amazon e Shopee selecionadas para você</p>
+    <!-- BANNER HERO -->
+    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white mb-8 shadow-2xl relative overflow-hidden border border-purple-800/30">
+      <div class="relative z-10 max-w-2xl">
+        <div class="flex items-center space-x-2 mb-3">
+          <span class="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest flex items-center space-x-1 shadow-lg shadow-red-500/40">
+            <i data-lucide="flame" class="w-3 h-3 fill-current"></i>
+            <span>Promoções Relâmpago Ativas</span>
+          </span>
+          <span class="text-xs text-amber-300 font-medium flex items-center space-x-1">
+            <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+            <span>Atualizado automaticamente via Bot</span>
+          </span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl font-black mb-3 leading-tight tracking-tight">
+          Menores preços detectados em tempo real.
+        </h1>
+        <p class="text-slate-300 text-sm sm:text-base mb-6">
+          Nosso robô monitora lojas como Amazon, Shopee e Mercado Livre para capturar automaticamente os melhores descontos!
+        </p>
+        
+        <!-- Campo de Busca -->
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-4 top-3.5 h-5 w-5 text-slate-400"></i>
+          <input
+            type="text"
+            id="search-input"
+            oninput="applyFilters()"
+            placeholder="Buscar promoções encontradas pelo bot..."
+            class="w-full pl-12 pr-4 py-3.5 bg-white text-slate-900 rounded-2xl shadow-xl border-0 focus:ring-4 focus:ring-amber-400 transition outline-none text-sm font-medium"
+          />
+        </div>
+      </div>
     </div>
 
-    <!-- Status de Carregamento -->
-    <div id="loading" class="text-center py-10">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
-      <p class="text-sm text-gray-500 mt-2">Buscando melhores preços...</p>
+    <!-- FILTROS -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <!-- Lojas -->
+        <div class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs">
+          <i data-lucide="store" class="w-3.5 h-3.5 text-slate-500"></i>
+          <select id="store-filter" onchange="applyFilters()" class="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer">
+            <option value="Todas">Todas as Lojas</option>
+            <option value="Amazon">Amazon</option>
+            <option value="Shopee">Shopee</option>
+            <option value="Mercado Livre">Mercado Livre</option>
+            <option value="Promobit">Promobit</option>
+          </select>
+        </div>
+
+      </div>
     </div>
 
-    <!-- Grid de Ofertas -->
-    <div id="grid-ofertas" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 hidden">
-      <!-- Cards serão inseridos via JavaScript -->
-    </div>
+    <!-- GRID DE OFERTAS -->
+    <div>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
+          <span>Promoções Rastreadas</span>
+          <span id="offers-count" class="text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold">
+            0 ativas
+          </span>
+        </h2>
+      </div>
 
+      <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Cards renderizados via JS -->
+      </div>
+    </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500 mt-auto">
-    <p>© 2026 Radar de Ofertas - Os preços podem variar no site do anunciante.</p>
-  </footer>
+  <!-- PAINEL DO BOT (ADMIN) -->
+  <main id="tab-admin" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-black text-slate-900 flex items-center space-x-2">
+          <i data-lucide="bot" class="w-7 h-7 text-amber-500"></i>
+          <span>Painel de Controle do Robô</span>
+        </h1>
+        <p class="text-slate-500 text-sm">
+          Gerencie o raspador de dados, monitore os logs e configure a automação.
+        </p>
+      </div>
 
-  <!-- Script de Conexão com o Backend -->
+      <button id="btn-run-bot" onclick="triggerBot()" class="px-6 py-3 rounded-2xl font-bold text-sm shadow-lg flex items-center space-x-2 transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:opacity-90 active:scale-95 shadow-amber-500/20">
+        <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+        <span>Executar Varredura Agora</span>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Terminal de Logs -->
+      <div class="lg:col-span-3 bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl flex flex-col">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <div class="flex items-center space-x-2">
+            <div class="flex space-x-1.5">
+              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+            </div>
+            <span class="text-xs font-mono text-slate-400 font-bold ml-2">Console do Servidor (Render)</span>
+          </div>
+        </div>
+
+        <div id="bot-logs" class="bg-slate-950/80 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-2 overflow-y-auto max-h-[320px] min-h-[180px]">
+          <div class="text-slate-500 italic">[SISTEMA]: Aguardando execução do scraper...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- LÓGICA JAVASCRIPT -->
   <script>
-    const API_URL = 'https://agregador-ofertas-backend.onrender.com/api/ofertas';
+    // IMPORTANTE: Altere para a URL do seu servidor hospedado no Render
+    const API_URL = "https://seu-app.onrender.com/api/ofertas"; 
 
-    async function carregarOfertas() {
-      const container = document.getElementById('grid-ofertas');
-      const loading = document.getElementById('loading');
+    let allOffers = [];
 
+    // Carregar Ofertas da API
+    async function fetchOffers() {
       try {
         const response = await fetch(API_URL);
-        const ofertas = await response.json();
-
-        loading.classList.add('hidden');
-        container.classList.remove('hidden');
-        container.innerHTML = '';
-
-        if (ofertas.length === 0) {
-          container.innerHTML = '<p class="col-span-full text-center text-gray-500">Nenhuma oferta encontrada no momento.</p>';
-          return;
-        }
-
-        ofertas.forEach(oferta => {
-          const card = `
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
-              <img src="${oferta.imagem}" alt="${oferta.titulo}" class="w-full h-48 object-cover">
-              <div class="p-4 flex flex-col flex-grow">
-                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 mb-2">${oferta.titulo}</h3>
-                <div class="mt-auto">
-                  <p class="text-xs text-gray-500">A partir de</p>
-                  <p class="text-xl font-bold text-green-600">${oferta.preco}</p>
-                  <a href="${oferta.link}" target="_blank" rel="noopener noreferrer" 
-                     class="mt-3 block text-center bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg text-sm transition">
-                    Ver Promoção
-                  </a>
-                </div>
-              </div>
-            </div>
-          `;
-          container.innerHTML += card;
-        });
-
-      } catch (erro) {
-        console.error('Erro ao carregar ofertas:', erro);
-        loading.innerHTML = '<p class="text-red-500 text-sm">Não foi possível carregar as ofertas. Tente novamente mais tarde.</p>';
+        const data = await response.json();
+        allOffers = data;
+        renderOffers(allOffers);
+        addLog("✅ Ofertas atualizadas do servidor com sucesso.");
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        addLog("❌ Erro ao conectar com o backend. Verifique se o Render está rodando.");
       }
     }
 
-    // Inicializa ao carregar a página
-    carregarOfertas();
+    // Renderizar Cards de Produtos
+    function renderOffers(offers) {
+      const grid = document.getElementById("products-grid");
+      const countLabel = document.getElementById("offers-count");
+      
+      countLabel.innerText = `${offers.length} ativas`;
+      grid.innerHTML = "";
+
+      if (offers.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Nenhuma oferta encontrada.</div>`;
+        return;
+      }
+
+      offers.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group relative";
+
+        card.innerHTML = `
+          <div class="relative aspect-square bg-slate-50 overflow-hidden">
+            <img src="${product.imagem || 'https://via.placeholder.com/300'}" alt="${product.titulo}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
+                ${product.titulo}
+              </h3>
+              <div class="mb-4">
+                <span class="text-2xl font-black text-slate-900 tracking-tight">${product.preco}</span>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <a href="${product.link}" target="_blank" rel="noopener noreferrer" class="w-full text-center bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-amber-500/10">
+                Ver Oferta na Loja
+              </a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Filtros de Pesquisa
+    function applyFilters() {
+      const query = document.getElementById("search-input").value.toLowerCase();
+      const store = document.getElementById("store-filter").value;
+
+      const filtered = allOffers.filter(item => {
+        const matchesQuery = item.titulo.toLowerCase().includes(query);
+        const matchesStore = store === "Todas" || item.titulo.toLowerCase().includes(store.toLowerCase());
+        return matchesQuery && matchesStore;
+      });
+
+      renderOffers(filtered);
+    }
+
+    // Mudar de Aba
+    function switchTab(tab) {
+      const tabUser = document.getElementById("tab-user");
+      const tabAdmin = document.getElementById("tab-admin");
+      const btnUser = document.getElementById("btn-tab-user");
+      const btnAdmin = document.getElementById("btn-tab-admin");
+
+      if (tab === 'user') {
+        tabUser.classList.remove("hidden");
+        tabAdmin.classList.add("hidden");
+        btnUser.className = "flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md";
+        btnAdmin.className = "flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white";
+      } else {
+        tabAdmin.classList.remove("hidden");
+        tabUser.classList.add("hidden");
+        btnAdmin.className = "flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md";
+        btnUser.className = "flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white";
+      }
+    }
+
+    // Terminal de Logs
+    function addLog(msg) {
+      const container = document.getElementById("bot-logs");
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement("div");
+      line.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+      container.prepend(line);
+    }
+
+    // Disparar Varredura Manual
+    function triggerBot() {
+      addLog("🚀 Disparando varredura manual de ofertas...");
+      fetchOffers();
+    }
+
+    // Inicialização
+    window.onload = () => {
+      lucide.createIcons();
+      fetchOffers();
+    };
   </script>
 </body>
 </html>
