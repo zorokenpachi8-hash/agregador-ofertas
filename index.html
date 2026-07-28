@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Ofertas Relâmpago</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+  <!-- Cabeçalho -->
+  <header class="bg-blue-600 text-white p-4 shadow-lg sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold flex items-center gap-2">
+        ⚡ Ofertas Relâmpago
+      </h1>
+      <span class="bg-red-500 text-xs px-3 py-1 rounded-full animate-pulse font-bold">
+        AO VIVO
+      </span>
+    </div>
+  </header>
+
+  <!-- Lista de Ofertas -->
+  <main class="max-w-6xl mx-auto p-4">
+    <h2 class="text-xl font-bold mb-4">🔥 Promoções Selecionadas</h2>
+    <div id="ofertas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <p class="text-gray-500">Carregando promoções...</p>
+    </div>
+  </main>
+
+  <script>
+    // Substitua pela URL gerada pelo Render após hospedar o back-end
+    const API_URL = 'http://localhost:5000/api/ofertas';
+
+    async function carregarOfertas() {
+      try {
+        const res = await fetch(API_URL);
+        const ofertas = await res.json();
+        const container = document.getElementById('ofertas-container');
+        
+        container.innerHTML = ofertas.map(item => `
+          <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-xl transition">
+            <img src="${item.image}" alt="${item.title}" class="w-full h-48 object-cover">
+            <div class="p-4">
+              <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">${item.store}</span>
+              <h3 class="font-semibold text-lg mt-2 line-clamp-2">${item.title}</h3>
+              <div class="mt-3">
+                <span class="text-sm text-gray-400 line-through">R$ ${item.oldPrice.toFixed(2)}</span>
+                <p class="text-2xl font-bold text-green-600">R$ ${item.price.toFixed(2)}</p>
+              </div>
+              <a href="${item.affiliateUrl}" target="_blank" rel="noopener noreferrer" 
+                 class="mt-4 block text-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition">
+                Pegar Promoção 🚀
+              </a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Erro ao carregar ofertas:', err);
+      }
+    }
+
+    carregarOfertas();
+  </script>
+</body>
+</html>
