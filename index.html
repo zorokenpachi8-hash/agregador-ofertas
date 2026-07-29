@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,20 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FlashOfertas - Agregador de Promoções</title>
   
-  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Ícones Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- HEADER PRINCIPAL -->
+  <!-- HEADER -->
   <header class="bg-slate-900 text-white shadow-xl sticky top-0 z-40 border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         
-        <!-- Logo -->
         <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('user')">
           <div class="bg-gradient-to-tr from-amber-500 to-red-500 text-white p-2 rounded-xl shadow-lg shadow-amber-500/20">
             <i data-lucide="zap" class="h-6 w-6 fill-current"></i>
@@ -33,7 +30,6 @@
           </div>
         </div>
 
-        <!-- Alternador de Abas -->
         <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
           <button id="btn-tab-user" onclick="switchTab('user')" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md">
             <i data-lucide="eye" class="w-4 h-4"></i>
@@ -49,10 +45,9 @@
     </div>
   </header>
 
-  <!-- PORTAL DO USUÁRIO -->
+  <!-- PORTAL PÚBLICO -->
   <main id="tab-user" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     
-    <!-- BANNER HERO -->
     <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white mb-8 shadow-2xl relative overflow-hidden border border-purple-800/30">
       <div class="relative z-10 max-w-2xl">
         <div class="flex items-center space-x-2 mb-3">
@@ -70,10 +65,9 @@
           Menores preços detectados em tempo real.
         </h1>
         <p class="text-slate-300 text-sm sm:text-base mb-6">
-          Nosso robô monitora lojas como Amazon, Shopee e Mercado Livre para capturar automaticamente os melhores descontos!
+          O nosso robô monitoriza lojas para capturar automaticamente os melhores descontos!
         </p>
         
-        <!-- Campo de Busca -->
         <div class="relative">
           <i data-lucide="search" class="absolute left-4 top-3.5 h-5 w-5 text-slate-400"></i>
           <input
@@ -90,8 +84,6 @@
     <!-- FILTROS -->
     <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 mb-8">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        
-        <!-- Lojas -->
         <div class="flex items-center space-x-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs">
           <i data-lucide="store" class="w-3.5 h-3.5 text-slate-500"></i>
           <select id="store-filter" onchange="applyFilters()" class="bg-transparent font-semibold text-slate-700 outline-none cursor-pointer">
@@ -99,14 +91,12 @@
             <option value="Amazon">Amazon</option>
             <option value="Shopee">Shopee</option>
             <option value="Mercado Livre">Mercado Livre</option>
-            <option value="Promobit">Promobit</option>
           </select>
         </div>
-
       </div>
     </div>
 
-    <!-- GRID DE OFERTAS -->
+    <!-- GRID -->
     <div>
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
@@ -118,12 +108,12 @@
       </div>
 
       <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <!-- Cards renderizados via JS -->
+        <!-- Renderizado pelo JS -->
       </div>
     </div>
   </main>
 
-  <!-- PAINEL DO BOT (ADMIN) -->
+  <!-- PAINEL DO BOT -->
   <main id="tab-admin" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
     <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -132,7 +122,7 @@
           <span>Painel de Controle do Robô</span>
         </h1>
         <p class="text-slate-500 text-sm">
-          Gerencie o raspador de dados, monitore os logs e configure a automação.
+          Gerencie o raspador de dados, monitore os logs e execute varreduras manuais.
         </p>
       </div>
 
@@ -143,7 +133,6 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- Terminal de Logs -->
       <div class="lg:col-span-3 bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl flex flex-col">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
           <div class="flex items-center space-x-2">
@@ -163,29 +152,26 @@
     </div>
   </main>
 
-  <!-- LÓGICA JAVASCRIPT -->
   <script>
-    // IMPORTANTE: Altere para a URL do seu servidor hospedado no Render
     const API_URL = "https://agregador-ofertas-backend.onrender.com/api/ofertas";
-
+    const RUN_BOT_URL = "https://agregador-ofertas-backend.onrender.com/api/run-bot";
 
     let allOffers = [];
 
-    // Carregar Ofertas da API
     async function fetchOffers() {
       try {
+        addLog("⏳ Conectando ao servidor no Render...");
         const response = await fetch(API_URL);
         const data = await response.json();
         allOffers = data;
         renderOffers(allOffers);
-        addLog("✅ Ofertas atualizadas do servidor com sucesso.");
+        addLog(`✅ Sucesso! ${allOffers.length} ofertas carregadas.`);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
-        addLog("❌ Erro ao conectar com o backend. Verifique se o Render está rodando.");
+        addLog("❌ Erro ao conectar com o backend.");
       }
     }
 
-    // Renderizar Cards de Produtos
     function renderOffers(offers) {
       const grid = document.getElementById("products-grid");
       const countLabel = document.getElementById("offers-count");
@@ -194,7 +180,7 @@
       grid.innerHTML = "";
 
       if (offers.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Nenhuma oferta encontrada.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Nenhuma oferta encontrada. Execute a varredura no painel.</div>`;
         return;
       }
 
@@ -202,13 +188,24 @@
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group relative";
 
+        // Substitui a imagem por um placeholder limpo caso a imagem do produto falhe
+        const imgFallback = "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500";
+
         card.innerHTML = `
-          <div class="relative aspect-square bg-slate-50 overflow-hidden">
-            <img src="${product.imagem || 'https://via.placeholder.com/300'}" alt="${product.titulo}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          <div class="relative aspect-square bg-slate-50 overflow-hidden flex items-center justify-center p-4">
+            <img 
+              src="${product.imagem}" 
+              alt="${product.titulo}" 
+              onerror="this.onerror=null; this.src='${imgFallback}';" 
+              class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500"
+            >
+            <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">
+              ${product.loja || 'Loja'}
+            </span>
           </div>
           <div class="p-5 flex-1 flex flex-col justify-between">
             <div>
-              <h3 class="font-bold text-slate-800 text-base line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
+              <h3 class="font-bold text-slate-800 text-sm line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
                 ${product.titulo}
               </h3>
               <div class="mb-4">
@@ -228,21 +225,19 @@
       lucide.createIcons();
     }
 
-    // Filtros de Pesquisa
     function applyFilters() {
       const query = document.getElementById("search-input").value.toLowerCase();
       const store = document.getElementById("store-filter").value;
 
       const filtered = allOffers.filter(item => {
         const matchesQuery = item.titulo.toLowerCase().includes(query);
-        const matchesStore = store === "Todas" || item.titulo.toLowerCase().includes(store.toLowerCase());
+        const matchesStore = store === "Todas" || item.loja === store;
         return matchesQuery && matchesStore;
       });
 
       renderOffers(filtered);
     }
 
-    // Mudar de Aba
     function switchTab(tab) {
       const tabUser = document.getElementById("tab-user");
       const tabAdmin = document.getElementById("tab-admin");
@@ -262,7 +257,6 @@
       }
     }
 
-    // Terminal de Logs
     function addLog(msg) {
       const container = document.getElementById("bot-logs");
       const time = new Date().toLocaleTimeString();
@@ -271,13 +265,21 @@
       container.prepend(line);
     }
 
-    // Disparar Varredura Manual
-    function triggerBot() {
-      addLog("🚀 Disparando varredura manual de ofertas...");
-      fetchOffers();
+    async function triggerBot() {
+      addLog("🚀 Disparando varredura manual de ofertas no Render...");
+      try {
+        const response = await fetch(RUN_BOT_URL);
+        const data = await response.json();
+        if (data.sucesso) {
+          addLog(`🎉 Varredura finalizada! ${data.total} ofertas atualizadas.`);
+          allOffers = data.ofertas;
+          renderOffers(allOffers);
+        }
+      } catch (err) {
+        addLog("❌ Erro ao disparar varredura.");
+      }
     }
 
-    // Inicialização
     window.onload = () => {
       lucide.createIcons();
       fetchOffers();
@@ -285,3 +287,5 @@
   </script>
 </body>
 </html>
+
+```
