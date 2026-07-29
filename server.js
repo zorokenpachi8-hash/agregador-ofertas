@@ -8,123 +8,131 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const HEADERS_BROWSER = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'application/json, text/plain, */*'
+// Cabeçalhos que simulam perfeitamente um navegador acessando do Brasil
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Accept': 'application/json, text/plain, */*',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+  'Sec-Ch-Ua-Mobile': '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"'
 };
 
 let ofertasMemoria = [];
 
-// 1. Mercado Livre via API Oficial
+// ==========================================
+// 1. MERCADO LIVRE (BUSCA DIRETA NA API REAIS)
+// ==========================================
 async function buscarMercadoLivre() {
-  try {
-    console.log('🔍 [BOT]: A procurar promoções reais no Mercado Livre...');
-    const url = 'https://api.mercadolibre.com/sites/MLB/search?q=oferta%20desconto&limit=25';
-    const res = await axios.get(url, { headers: HEADERS_BROWSER, timeout: 8000 });
-    const results = res.data?.results || [];
+  const termosBusca = ['smartphone promocao', 'notebook ofertas', 'fone bluetooth', 'gamer'];
+  let resultadosML = [];
 
-    return results.map(item => {
-      let imagemHD = item.thumbnail ? item.thumbnail.replace('-I.jpg', '-O.jpg').replace('-I.webp', '-O.webp') : '';
-      if (!imagemHD.startsWith('http')) {
-        imagemHD = item.thumbnail;
-      }
+  console.log('🔍 [BOT]: A procurar ofertas diretamente no Mercado Livre...');
 
-      return {
-        id: 'ml-' + item.id,
-        titulo: item.title,
-        preco: `R$ ${item.price ? item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Ver na Loja'}`,
-        imagem: imagemHD || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500',
-        link: item.permalink,
-        loja: 'Mercado Livre'
-      };
-    });
-  } catch (err) {
-    console.error('⚠️ [BOT]: Erro no Mercado Livre:', err.message);
-    return [];
+  for (const termo of termosBusca) {
+    try {
+      const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(termo)}&limit=8`;
+      const res = await axios.get(url, { headers: BROWSER_HEADERS, timeout: 7000 });
+      const items = res.data?.results || [];
+
+      items.forEach(item => {
+        // Converte imagem miniatura para Alta Resolução
+        let imgHD = item.thumbnail ? item.thumbnail.replace('-I.jpg', '-O.jpg').replace('-I.webp', '-O.webp') : '';
+        if (!imgHD.startsWith('http')) imgHD = item.thumbnail;
+
+        resultadosML.push({
+          id: 'ml-' + item.id,
+          titulo: item.title,
+          preco: `R$ ${item.price ? item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Ver na Loja'}`,
+          imagem: imgHD,
+          link: item.permalink,
+          loja: 'Mercado Livre'
+        });
+      });
+    } catch (err) {
+      console.error(`⚠️ [BOT]: Falha ao buscar "${termo}" no ML:`, err.message);
+    }
   }
+
+  console.log(`✅ [BOT]: Mercado Livre retornou ${resultadosML.length} ofertas reais.`);
+  return resultadosML;
 }
 
-// 2. Shopee via API de Achadinhos e Destaques
+// ==========================================
+// 2. SHOPEE (BUSCA DIRETA NOS ITENS DA SHOPEE BRASIL)
+// ==========================================
 async function buscarShopee() {
+  let resultadosShopee = [];
+  console.log('🔍 [BOT]: A procurar ofertas diretamente na Shopee...');
+
   try {
-    console.log('🔍 [BOT]: A procurar ofertas e achadinhos na Shopee...');
     const url = 'https://shopee.com.br/api/v4/recommend/recommend?bundle=daily_discover_main&limit=20&offset=0';
-    const res = await axios.get(url, { headers: HEADERS_BROWSER, timeout: 8000 });
-    
+    const headersShopee = {
+      ...BROWSER_HEADERS,
+      'Referer': 'https://shopee.com.br/',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-Shopee-Language': 'pt-BR'
+    };
+
+    const res = await axios.get(url, { headers: headersShopee, timeout: 8000 });
     const items = res.data?.data?.sections?.[0]?.data?.item || [];
-    const lista = [];
 
     items.forEach(item => {
       const titulo = item.name || item.title;
-      const precoCentavos = item.price ? (item.price / 100000).toFixed(2) : null;
+      // Na Shopee o preço vem multiplicado por 100000
+      const precoCalculado = item.price ? (item.price / 100000).toFixed(2) : null;
       const imageHash = item.image;
       const itemId = item.itemid;
       const shopId = item.shopid;
 
-      if (titulo && precoCentavos && imageHash) {
+      if (titulo && precoCalculado && imageHash) {
         const imgUrl = `https://down-br.img.susercontent.com/file/${imageHash}`;
         const linkProduto = `https://shopee.com.br/product/${shopId}/${itemId}`;
 
-        lista.push({
+        resultadosShopee.push({
           id: 'sp-' + itemId,
-          titulo: titulo.length > 90 ? titulo.substring(0, 90) + '...' : titulo,
-          preco: `R$ ${parseFloat(precoCentavos).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          titulo: titulo.length > 95 ? titulo.substring(0, 95) + '...' : titulo,
+          preco: `R$ ${parseFloat(precoCalculado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
           imagem: imgUrl,
           link: linkProduto,
           loja: 'Shopee'
         });
       }
     });
-
-    return lista;
   } catch (err) {
-    console.error('⚠️ [BOT]: Erro na Shopee:', err.message);
-    return [];
+    console.error('⚠️ [BOT]: Erro ao conectar com Shopee:', err.message);
   }
+
+  console.log(`✅ [BOT]: Shopee retornou ${resultadosShopee.length} ofertas reais.`);
+  return resultadosShopee;
 }
 
-// 3. Pelando via API de Promoções
-async function buscarPelando() {
-  try {
-    console.log('🔍 [BOT]: A procurar promoções no Pelando...');
-    const res = await axios.get('https://www.pelando.com.br/api/v2/deals?limit=20', { headers: HEADERS_BROWSER, timeout: 8000 });
-    const ofertas = res.data?.data || [];
-    
-    return ofertas.map(item => ({
-      id: 'pl-' + item.id,
-      titulo: item.title,
-      preco: item.price ? `R$ ${item.price.toFixed(2).replace('.', ',')}` : 'Ver Oferta',
-      imagem: item.image?.url || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500',
-      link: item.url || item.sourceUrl || 'https://www.pelando.com.br',
-      loja: item.store?.name || 'Amazon'
-    }));
-  } catch (err) {
-    console.error('⚠️ [BOT]: Erro no Pelando:', err.message);
-    return [];
-  }
-}
-
-// Varredura Geral
+// ==========================================
+// VARREDURA UNIFICADA
+// ==========================================
 async function executarVarreduraGeral() {
-  console.log('🚀 [BOT]: A iniciar varredura em tempo real...');
-  
-  const [mercadoLivre, shopee, pelando] = await Promise.all([
+  console.log('🚀 [BOT]: A iniciar varredura direta (Mercado Livre + Shopee)...');
+
+  const [ml, shopee] = await Promise.all([
     buscarMercadoLivre(),
-    buscarShopee(),
-    buscarPelando()
+    buscarShopee()
   ]);
 
-  const combinadas = [...mercadoLivre, ...shopee, ...pelando];
+  const ofertasTotais = [...ml, ...shopee];
 
-  if (combinadas.length > 0) {
-    ofertasMemoria = combinadas;
-    console.log(`🎉 [BOT]: Varredura concluída! Total de ${ofertasMemoria.length} promoções reais carregadas.`);
+  if (ofertasTotais.length > 0) {
+    ofertasMemoria = ofertasTotais;
+    console.log(`🎉 [BOT]: Sucesso total! ${ofertasMemoria.length} promoções carregadas na memória.`);
+  } else {
+    console.log('⚠️ [BOT]: Nenhuma oferta foi retornada nesta tentativa.');
   }
 
   return ofertasMemoria;
 }
 
-// Rotas da API
+// ==========================================
+// ROTAS DA API
+// ==========================================
 app.get('/api/ofertas', async (req, res) => {
   if (ofertasMemoria.length === 0) {
     await executarVarreduraGeral();
@@ -136,14 +144,14 @@ app.get('/api/run-bot', async (req, res) => {
   const resultado = await executarVarreduraGeral();
   res.json({
     sucesso: true,
-    mensagem: 'Varredura finalizada com sucesso!',
+    mensagem: 'Varredura direta concluída com sucesso!',
     total: resultado.length,
     ofertas: resultado
   });
 });
 
 app.get('/', (req, res) => {
-  res.send('🤖 Robô Scraper FlashOfertas está 100% Ativo!');
+  res.send('🤖 Robô Agregador Mercado Livre & Shopee ativo!');
 });
 
 app.listen(PORT, async () => {
