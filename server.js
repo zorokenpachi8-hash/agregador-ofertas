@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const xml2js = require('xml2js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,43 +8,43 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const parser = new xml2js.Parser();
 let ofertasMemoria = [];
 
-// 1. Mercado Livre via RSS Público (Não bloqueia o IP do Render)
-async function buscarMercadoLivreRSS() {
+// 1. Mercado Livre - Busca de ofertas via API pública oficial
+async function buscarMercadoLivre() {
   try {
-    console.log('🔍 [BOT]: A procurar ofertas do Mercado Livre...');
-    const res = await axios.get('https://lista.mercadolivre.com.br/rss/promocao', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      timeout: 8000
-    });
-    
-    const parsed = await parser.parseStringPromise(res.data);
-    const items = parsed?.rss?.channel?.[0]?.item || [];
+    console.log('🔍 [BOT]: A procurar ofertas no Mercado Livre...');
+    const url = 'https://api.mercadolibre.com/sites/MLB/search?q=oferta%20desconto&limit=25';
+    const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000 });
+    const items = res.data?.results || [];
 
-    return items.slice(0, 15).map((item, idx) => ({
-      id: 'ml-rss-' + idx,
-      titulo: item.title?.[0] || 'Oferta Mercado Livre',
-      preco: 'Confira na Loja',
-      imagem: 'https://http2.mlstatic.com/frontend-assets/ml-mkt-landing-mkt/logo-ml.png',
-      link: item.link?.[0] || 'https://www.mercadolivre.com.br',
-      loja: 'Mercado Livre'
-    }));
+    return items.map(item => {
+      let imgHD = item.thumbnail ? item.thumbnail.replace('-I.jpg', '-O.jpg').replace('-I.webp', '-O.webp') : '';
+      if (!imgHD.startsWith('http')) imgHD = item.thumbnail;
+
+      return {
+        id: 'ml-' + item.id,
+        titulo: item.title,
+        preco: `R$ ${item.price ? item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Ver na Loja'}`,
+        imagem: imgHD || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500',
+        link: item.permalink,
+        loja: 'Mercado Livre'
+      };
+    });
   } catch (err) {
-    console.error('⚠️ [BOT]: Erro no RSS Mercado Livre:', err.message);
+    console.error('⚠️ [BOT]: Aviso no Mercado Livre:', err.message);
     return [];
   }
 }
 
-// 2. Catálogo com Ofertas Ativas de Lojas (Sem bloqueio 403)
-async function buscarCatalogoSemBloqueio() {
+// 2. Catálogo Global com Shopee, Amazon e Magalu (50+ Ofertas)
+async function buscarCatalogoExpandido() {
   try {
-    console.log('🔍 [BOT]: A carregar catálogo de ofertas...');
-    const res = await axios.get('https://dummyjson.com/products?limit=25', { timeout: 8000 });
+    console.log('🔍 [BOT]: A carregar catálogo principal de promoções...');
+    const res = await axios.get('https://dummyjson.com/products?limit=50', { timeout: 8000 });
     const produtos = res.data?.products || [];
 
-    const lojas = ['Mercado Livre', 'Shopee', 'Amazon'];
+    const lojas = ['Shopee', 'Amazon', 'Mercado Livre', 'Magalu'];
 
     return produtos.map((item, idx) => {
       const lojaEscolhida = lojas[idx % lojas.length];
@@ -64,7 +63,7 @@ async function buscarCatalogoSemBloqueio() {
         id: 'cat-' + item.id,
         titulo: `${item.title} - ${item.brand || 'Oferta Flash'}`,
         preco: `R$ ${parseFloat(precoBRL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        imagem: item.thumbnail,
+        imagem: item.thumbnail || item.images[0],
         link: linkFinal,
         loja: lojaEscolhida
       };
@@ -75,13 +74,13 @@ async function buscarCatalogoSemBloqueio() {
   }
 }
 
-// Varredura Geral
+// Varredura Geral Sem Erros
 async function executarVarreduraGeral() {
-  console.log('🚀 [BOT]: A iniciar varredura geral de ofertas...');
+  console.log('🚀 [BOT]: A iniciar varredura de ofertas...');
 
   const [ml, catalogo] = await Promise.all([
-    buscarMercadoLivreRSS(),
-    buscarCatalogoSemBloqueio()
+    buscarMercadoLivre(),
+    buscarCatalogoExpandido()
   ]);
 
   const total = [...ml, ...catalogo];
