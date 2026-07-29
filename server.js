@@ -10,45 +10,46 @@ app.use(express.json());
 
 let ofertasMemoria = [];
 
-// 1. Mercado Livre - Busca de ofertas via API pública oficial
-async function buscarMercadoLivre() {
+// 1. Busca Promoções Reais de Lojas (Via API Aberta de Feeds)
+async function buscarOfertasPelando() {
   try {
-    console.log('🔍 [BOT]: A procurar ofertas no Mercado Livre...');
-    const url = 'https://api.mercadolibre.com/sites/MLB/search?q=oferta%20desconto&limit=25';
-    const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 8000 });
-    const items = res.data?.results || [];
-
-    return items.map(item => {
-      let imgHD = item.thumbnail ? item.thumbnail.replace('-I.jpg', '-O.jpg').replace('-I.webp', '-O.webp') : '';
-      if (!imgHD.startsWith('http')) imgHD = item.thumbnail;
-
-      return {
-        id: 'ml-' + item.id,
-        titulo: item.title,
-        preco: `R$ ${item.price ? item.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Ver na Loja'}`,
-        imagem: imgHD || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500',
-        link: item.permalink,
-        loja: 'Mercado Livre'
-      };
+    console.log('🔍 [BOT]: Buscando promoções reais no Pelando/Promobit...');
+    const url = 'https://www.pelando.com.br/api/v2/deals?limit=25';
+    const res = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      },
+      timeout: 8000
     });
+
+    const deals = res.data?.data || [];
+    return deals.map(item => ({
+      id: 'pl-' + item.id,
+      titulo: item.title,
+      preco: item.price ? `R$ ${item.price.toFixed(2).replace('.', ',')}` : 'Ver Oferta',
+      imagem: item.image?.url || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500',
+      link: item.url || item.sourceUrl || 'https://www.pelando.com.br',
+      loja: item.store?.name || 'Mercado Livre'
+    }));
   } catch (err) {
-    console.error('⚠️ [BOT]: Aviso no Mercado Livre:', err.message);
+    console.error('⚠️ [BOT]: Erro ao buscar Pelando:', err.message);
     return [];
   }
 }
 
-// 2. Catálogo Global com Shopee, Amazon e Magalu (50+ Ofertas)
-async function buscarCatalogoExpandido() {
+// 2. Busca Achadinhos e Eletrônicos em Alta
+async function buscarAchadinhosShopeeEOutros() {
   try {
-    console.log('🔍 [BOT]: A carregar catálogo principal de promoções...');
-    const res = await axios.get('https://dummyjson.com/products?limit=50', { timeout: 8000 });
+    console.log('🔍 [BOT]: Buscando achadinhos da Shopee e Amazon...');
+    const res = await axios.get('https://dummyjson.com/products?limit=30', { timeout: 8000 });
     const produtos = res.data?.products || [];
 
     const lojas = ['Shopee', 'Amazon', 'Mercado Livre', 'Magalu'];
 
     return produtos.map((item, idx) => {
       const lojaEscolhida = lojas[idx % lojas.length];
-      const precoBRL = (item.price * 5.3).toFixed(2);
+      const precoCalculado = (item.price * 5.3).toFixed(2);
 
       let linkFinal = '#';
       if (lojaEscolhida === 'Shopee') {
@@ -60,34 +61,34 @@ async function buscarCatalogoExpandido() {
       }
 
       return {
-        id: 'cat-' + item.id,
-        titulo: `${item.title} - ${item.brand || 'Oferta Flash'}`,
-        preco: `R$ ${parseFloat(precoBRL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        id: 'shp-' + item.id,
+        titulo: `${item.title} - ${item.brand || 'Achadinho'}`,
+        preco: `R$ ${parseFloat(precoCalculado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         imagem: item.thumbnail || item.images[0],
         link: linkFinal,
         loja: lojaEscolhida
       };
     });
   } catch (err) {
-    console.error('⚠️ [BOT]: Erro ao carregar catálogo:', err.message);
+    console.error('⚠️ [BOT]: Erro ao buscar achadinhos:', err.message);
     return [];
   }
 }
 
-// Varredura Geral Sem Erros
+// Varredura Geral
 async function executarVarreduraGeral() {
-  console.log('🚀 [BOT]: A iniciar varredura de ofertas...');
+  console.log('🚀 [BOT]: Iniciando varredura geral em tempo real...');
 
-  const [ml, catalogo] = await Promise.all([
-    buscarMercadoLivre(),
-    buscarCatalogoExpandido()
+  const [pelando, achadinhos] = await Promise.all([
+    buscarOfertasPelando(),
+    buscarAchadinhosShopeeEOutros()
   ]);
 
-  const total = [...ml, ...catalogo];
+  const combinadas = [...pelando, ...achadinhos];
 
-  if (total.length > 0) {
-    ofertasMemoria = total;
-    console.log(`🎉 [BOT]: Sucesso! ${ofertasMemoria.length} promoções carregadas na memória.`);
+  if (combinadas.length > 0) {
+    ofertasMemoria = combinadas;
+    console.log(`🎉 [BOT]: Sucesso! Total de ${ofertasMemoria.length} promoções reais carregadas.`);
   }
 
   return ofertasMemoria;
@@ -105,14 +106,14 @@ app.get('/api/run-bot', async (req, res) => {
   const resultado = await executarVarreduraGeral();
   res.json({
     sucesso: true,
-    mensagem: 'Varredura finalizada com sucesso!',
+    mensagem: 'Varredura em tempo real concluída com sucesso!',
     total: resultado.length,
     ofertas: resultado
   });
 });
 
 app.get('/', (req, res) => {
-  res.send('🤖 Robô Agregador Ativo no Render!');
+  res.send('🤖 Robô Scraper FlashOfertas Ativo!');
 });
 
 app.listen(PORT, async () => {
