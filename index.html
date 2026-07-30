@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -89,16 +89,11 @@
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-gray-500 text-sm"></i>
       </div>
 
-      <!-- BOTOES DE AÇÃO -->
+      <!-- BOTÃO DE OFERTAS RELÂMPAGO (AUTOMÁTICO COM SUA COMISSÃO) -->
       <div class="flex items-center gap-2">
-        <button onclick="executarScraper()" id="btn-sync" class="bg-brand-border hover:bg-gray-800 text-white text-xs px-3 py-2.5 rounded-xl font-semibold flex items-center gap-2 border border-gray-700 transition-all active:scale-95">
-          <i class="fa-solid fa-arrows-rotate text-brand-green" id="sync-icon"></i>
-          <span class="hidden sm:inline">Atualizar Bot</span>
-        </button>
-
-        <a href="https://affiliate.shopee.com.br" target="_blank" class="bg-brand-green hover:bg-brand-greenHover text-black text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-brand-green/20 transition-all active:scale-95">
-          <i class="fa-solid fa-[#10B981] fa-bolt"></i>
-          <span>Painel Shopee</span>
+        <a href="https://s.shopee.com.br/111i1Jtclr" target="_blank" class="bg-brand-green hover:bg-brand-greenHover text-black text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-brand-green/20 transition-all active:scale-95">
+          <i class="fa-solid fa-bolt text-sm"></i>
+          <span>Ofertas Relâmpago</span>
         </a>
       </div>
     </div>
@@ -154,7 +149,7 @@
   <!-- CONTEÚDO PRINCIPAL (FILTROS + CARDS) -->
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
-    <!-- FILTROS POR LOJA E ORDENAÇÃO (ESTILO CLASSIFICADOS OLX) -->
+    <!-- FILTROS POR LOJA E ORDENAÇÃO -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
       
       <!-- BOTÕES DE CATEGORIA / LOJA -->
@@ -163,10 +158,10 @@
           Todas
         </button>
         <button onclick="filtrarPorLoja('Shopee')" class="btn-loja bg-brand-card text-gray-300 font-medium text-xs px-4 py-2 rounded-xl border border-brand-border hover:border-brand-green transition-all">
-          <i class="fa-solid fa-[#10B981] fa-bag-shopping text-orange-400 mr-1"></i> Shopee
+          <i class="fa-solid fa-bag-shopping text-emerald-400 mr-1"></i> Shopee
         </button>
         <button onclick="filtrarPorLoja('Mercado Livre')" class="btn-loja bg-brand-card text-gray-300 font-medium text-xs px-4 py-2 rounded-xl border border-brand-border hover:border-brand-green transition-all">
-          <i class="fa-solid fa-[#10B981] fa-handshake text-yellow-400 mr-1"></i> Mercado Livre
+          <i class="fa-solid fa-handshake text-yellow-400 mr-1"></i> Mercado Livre
         </button>
         <button onclick="filtrarPorLoja('Amazon')" class="btn-loja bg-brand-card text-gray-300 font-medium text-xs px-4 py-2 rounded-xl border border-brand-border hover:border-brand-green transition-all">
           <i class="fa-brands fa-amazon text-cyan-400 mr-1"></i> Amazon
@@ -209,7 +204,7 @@
 
   </main>
 
-  <!-- MODAL DE DETALHES DO PRODUTO (SISTEMA DE VISUALIZAÇÃO DIRETA) -->
+  <!-- MODAL DE DETALHES DO PRODUTO -->
   <div id="modal-produto" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-brand-card border border-brand-border rounded-2xl max-w-lg w-full p-5 relative shadow-2xl animate-fade-in">
       
@@ -272,7 +267,6 @@
 
   <!-- SCRIPT DE INTEGRAÇÃO COM BACKEND DO RENDER -->
   <script>
-    // URL DO SEU BACKEND NO RENDER
     const API_URL = 'https://agregador-ofertas-backend.onrender.com';
 
     let todasOfertas = [];
@@ -301,7 +295,6 @@
         renderizarGrid();
       } catch (err) {
         console.error('Falha na API:', err);
-        // Fallback local caso o servidor do Render esteja hibernando
         todasOfertas = [
           {
             id: 'fc-1',
@@ -336,7 +329,6 @@
         const card = document.createElement('div');
         card.className = 'bg-brand-card border border-brand-border hover:border-brand-green/60 rounded-xl overflow-hidden flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 shadow-md';
 
-        // Badge de Loja
         let badgeColor = 'bg-brand-green/20 text-brand-green border-brand-green/30';
         if (item.loja === 'Mercado Livre') badgeColor = 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
         if (item.loja === 'Amazon') badgeColor = 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
@@ -443,24 +435,7 @@
       return parseFloat(num) || 0;
     }
 
-    // 6. EXECUTAR BOT DO RENDER (RE-SCAN)
-    async function executarScraper() {
-      const icon = document.getElementById('sync-icon');
-      icon.classList.add('fa-spin');
-
-      try {
-        const res = await fetch(`${API_URL}/api/run-bot`);
-        const data = await res.json();
-        alert(`✅ F&C Ofertas: ${data.mensagem || 'Varredura concluída!'}`);
-        await carregarOfertas();
-      } catch (err) {
-        alert('⚠️ O servidor está a ser ativado no Render. Aguarde 30 segundos e tente novamente!');
-      } finally {
-        icon.classList.remove('fa-spin');
-      }
-    }
-
-    // 7. MODAL DE VISUALIZAÇÃO
+    // 6. MODAL DE VISUALIZAÇÃO
     function abrirModal(titulo, preco, imagem, link, loja) {
       document.getElementById('modal-titulo').innerText = titulo;
       document.getElementById('modal-preco').innerText = preco;
@@ -482,10 +457,9 @@
       renderizarGrid();
     }
 
-    // INICIALIZAÇÃO AUTOMÁTICA
     window.onload = carregarOfertas;
   </script>
 </body>
 </html>
 
-```
+
